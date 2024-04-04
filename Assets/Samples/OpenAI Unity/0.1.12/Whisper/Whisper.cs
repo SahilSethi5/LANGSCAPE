@@ -18,7 +18,7 @@ namespace OpenAI
         private AudioClip clip;
         private bool isRecording;
         private float time;
-        private OpenAIApi openai = new OpenAIApi(apiKey: "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");
+        private OpenAIApi openai = new OpenAIApi(apiKey: "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");
 
         private void Start()
         {

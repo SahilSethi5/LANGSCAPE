@@ -13,7 +13,7 @@ public class CompassSpawning : MonoBehaviour
     void Update()
     {
         if (gesture.selected){
-            Debug.Log("Hello");
+            // Debug.Log("Hello");
 
             compass.SetActive(true);
         }

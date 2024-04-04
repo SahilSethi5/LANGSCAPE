@@ -1,5 +1,5 @@
 /*
- * Author: Jose Gonzalez Lopez, Christian Laverde, Justin Cardoso
+ * Author:
  * Script Description:
  *      Handles converting voice input into valid JSON object.
  * NOTES:
@@ -22,10 +22,32 @@ using static System.Net.Mime.MediaTypeNames;
 using static UnityEngine.Rendering.DebugUI;
 #if !UNITY_STANDALONE_WIN
 using Oculus.Interaction;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
+
+
 //using UnityEngine.Windows.Speech;
 #endif
 
 public class CommandInterpreter : MonoBehaviour {
+
+// My Code
+        private const string LocalhostUri = "http://131.94.128.132:9027"; // Replace "your_port_here" with your actual port
+        private const string Model = "mistral"; // Use your desired model
+        private const string ApiKey = "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"; // Not needed for local server
+
+        private static readonly HttpClient _gptClient;
+
+        private const string myMessage = "";
+
+// My code end
+
+
     // Display
     [SerializeField] private TMP_Text inputBox;
     [SerializeField] private TMP_Text outputBox;
@@ -74,7 +96,7 @@ public class CommandInterpreter : MonoBehaviour {
 
     // Loads prompt from file in Assets/Resources/prompt
     void Awake() {
-        openai = new OpenAIApi(apiKey: "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");
+        openai = new OpenAIApi(apiKey: "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");
         // 1st LLM
         TextAsset filedata = Resources.Load<TextAsset>("OpenAI/PROMPT");
         if (filedata == null)
@@ -83,7 +105,7 @@ public class CommandInterpreter : MonoBehaviour {
         Debug.Log(prompt);
         
         // Background LLM
-        b_llm = new OpenAIApi(apiKey: "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");
+        b_llm = new OpenAIApi(apiKey: "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");
         filedata = Resources.Load<TextAsset>("OpenAI/BACKGROUND");
         if (filedata == null)
             throw new System.Exception("No file found called prompt in 'Assets/Resources/OpenAI/BACKGROUND");
@@ -138,8 +160,11 @@ public class CommandInterpreter : MonoBehaviour {
         inputBox.text = res.Text;
         if (res.Error != null)
             inputBox.text = "You wont believe it.";
-        if (res.Text != "")
+        if (res.Text != ""){
             CreateJSON(res.Text);
+            // SendMessageToChatGPTLocalAsync(res.Text);
+        }
+
     }
 
     // Update is called once per frame
@@ -187,19 +212,22 @@ public class CommandInterpreter : MonoBehaviour {
             // Complete the instruction
             try
             {
-                var compResponse = await b_llm.CreateChatCompletion(new CreateChatCompletionRequest()
-                {
-                    Model = "gpt-4",
-                    Messages = b_messages,
-                    Temperature = 0f,
-                    MaxTokens = 256,
-                    PresencePenalty = 0,
-                    FrequencyPenalty = 0
-                });
+                Message allMessage = await SendMessageToChatGPTLocalAsync(b_messages); //userRequest was here before
+                // {
+                //     Model = "gpt-4",
+                //     Messages = b_messages,
+                //     Temperature = 0f,
+                //     MaxTokens = 256,
+                //     PresencePenalty = 0,
+                //     FrequencyPenalty = 0
+                // });
+                
 
-                if (compResponse.Choices != null && compResponse.Choices.Count > 0)
+                ChatMessage completionResponse = new ChatMessage() { Role = "system", Content = allMessage.content };
+
+                if (completionResponse.Content!= null)
                 {
-                    var aiRespa = compResponse.Choices[0].Message;
+                    var aiRespa = completionResponse;
 
                     string fluff = string.Empty; // Sentence
                     string instruct = string.Empty; // Command
@@ -229,6 +257,8 @@ public class CommandInterpreter : MonoBehaviour {
                     aiRespa.Content = aiRespa.Content.Trim();
 
                     b_messages.Add(aiRespa);
+
+                    Debug.Log("Printing fluff: " + fluff);
 
                     // Checks if Sentence Declaration is Not Empty
                     if (!string.IsNullOrEmpty(fluff))
@@ -261,28 +291,30 @@ public class CommandInterpreter : MonoBehaviour {
         }
         else
         {
+        
+            List<ChatMessage> temp_messages = new List<ChatMessage>();
+            temp_messages = messages;
             messages.Add(userRequest);
+            
             // Complete the instruction
             try
             {
-                var completionResponse = await openai.CreateChatCompletion(new CreateChatCompletionRequest()
-                {
-                    Model = "gpt-3.5-turbo-16k",
-                    Messages = messages,
-                    Temperature = 0f,
-                    MaxTokens = 256,
-                    PresencePenalty = 0,
-                    FrequencyPenalty = 0
-                });
+                Message allMessage = await SendMessageToChatGPTLocalAsync(messages); //userRequest was here before
 
-                if (completionResponse.Choices != null && completionResponse.Choices.Count > 0)
+                ChatMessage completionResponse = new ChatMessage() { Role = "system", Content = allMessage.content };
+
+                Debug.Log("completionResponse: " + completionResponse.Content);
+
+                if (completionResponse.Content!= null)
                 {
-                    var aiResponse = completionResponse.Choices[0].Message;
+                    var aiResponse = completionResponse;
+
+                    Debug.Log("AI response: " + aiResponse.Content);
 
                     string fluff = string.Empty; // Sentence
                     string instruct = string.Empty; // Command
 
-                    // If Message Contains Only the Command don't Modify, otherwise Modify
+                    //new
                     if (sa.hasOnlyCommand(aiResponse.Content, indicator) == false && aiResponse.Content != "n")
                     {
                         var Updated = sa.fullSplit((string)aiResponse.Content, indicator, indicator2);
@@ -292,21 +324,22 @@ public class CommandInterpreter : MonoBehaviour {
                         // Only the Message
                         fluff = Updated.sentence;
 
-                        // If Instruct Has No Instructions, Change to "n" (For Now)
                         if (string.IsNullOrEmpty(instruct) == false)
                         {
                             aiResponse.Content = instruct;
                         }
+
+                        // Comment out since no prompting done, do prompting and comment this back in
                         else
                         {
-                            aiResponse.Content = "n";
+                             aiResponse.Content = "n";
                         }
-
                     }
-
                     aiResponse.Content = aiResponse.Content.Trim();
 
-                    messages.Add(aiResponse);
+                    //new end
+                    
+                    //messages.Add(aiResponse);
 
                     // Checks if Sentence Declaration is Not Empty
                     if (!string.IsNullOrEmpty(fluff))
@@ -317,15 +350,17 @@ public class CommandInterpreter : MonoBehaviour {
                     else
                     {
                         // Outputs Ai Response without Commands into Output Box
-                        fluff = "AI Responded";
+                        fluff = "AI Responded"; //change later back to this
+                        ///fluff = aiResponse.Content;
                     }
 
                     // Outputs Ai Response without Commands into Output Box
                     outputBox.text = fluff;
+                
                     // Outputs Ai Response without Sentence into Debug Log
-                    Debug.Log("Command: " + aiResponse.Content);
+                    Debug.Log("Command: " + aiResponse);
 
-
+                    messages = temp_messages;
 
 
 
@@ -349,9 +384,165 @@ public class CommandInterpreter : MonoBehaviour {
             }
             catch (System.Exception e)
             {
-                outputBox.text = e.Message;
+                outputBox.text = e.Message; //error
             }
+
+            //Remove the last user message
+            //private List<ChatMessage> temp_messages = new List<ChatMessage>();
+
+
         }
     }
+
+    //MY code
+
+public static async Task <Message> SendMessageToChatGPTLocalAsync(List <ChatMessage> message)
+{
+    var localhostUri = "http://131.94.128.132:9027"; // Replace PORT with the actual port of your local server
+    using (var client = new HttpClient())
+    {
+        client.BaseAddress = new Uri(localhostUri);
+
+        // for(//amount in messages for each each message){
+        //     message[i].content = 
+        // }
+
+        string allMessage = "";
+
+        for(int i = 0; i < message.Count; i++){
+
+            allMessage += message[i].Content + " ";
+
+            if(i == message.Count - 1){
+                Debug.Log("Test" + message[i].Content);
+            }
+
+        }
+
+        Debug.Log("Test: " + allMessage);
+
+        var data = new MyData
+        {
+            model = "mistral",
+            messages = new[]
+            {
+                new Message
+                {
+                    role = "user",
+                    content = allMessage,
+                    
+                }
+            },
+            stream = false,
+            temperature = 0f,
+            max_tokens = 20,
+            // Add other parameters as needed
+        };
+
+        Debug.Log("Data print" + data.messages[0].content);
+
+
+        var json = JsonConvert.SerializeObject(data);
+        Debug.Log(json);
+
+        // var json = JsonSerializer.Serialize(new
+        // {
+        //     Model = "mistral",
+        //     Messages = new[]
+        //     {
+        //         new
+        //         {
+        //             Role = "user",
+        //             Content = message
+        //         }
+        //     },
+        //     Temperature = 0f,
+        //     MaxTokens = 256,
+        //     PresencePenalty = 0,
+        //     FrequencyPenalty = 0
+        //     // Add other parameters as needed
+        // });
+
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await client.PostAsync("/api/chat", content);
+        Debug.Log("Test4: " + response);
+
+        Message contentJson = new Message() { role = "system", content = "ERROR" };
+
+        if (response.IsSuccessStatusCode)
+        {
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            string[] jsonResponseStrings = responseContent.Split('\n', (char)StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (string jsonResponseString in jsonResponseStrings)
+            {
+                // Check if the JSON string is not empty before parsing
+                if (!string.IsNullOrWhiteSpace(jsonResponseString))
+                {
+                    // Parse each JSON object
+                    JObject jsonResponse = JObject.Parse(jsonResponseString);
+                    
+                    contentJson.content = jsonResponse["message"]["content"].ToString();
+                }
+            }
+            
+            Debug.Log("Test3:" + contentJson.content);
+
+            // Remove extra output from the response we get
+            string command = "";
+            int consecutiveNewlines = 0;
+            for (int i = 0; i < contentJson.content.Length; i++)
+            {
+                if (consecutiveNewlines < 2)
+                {
+                    command += contentJson.content[i];
+                }
+
+                // Check for consecutive newline characters
+                if (contentJson.content[i] == '\n')
+                {
+                    consecutiveNewlines++;
+                    if (consecutiveNewlines == 2)
+                    {
+                        break; // Stop printing if two consecutive newline characters are found
+                    }
+                }
+                else
+                {
+                    consecutiveNewlines = 0; // Reset consecutive newline counter if a non-newline character is encountered
+                }
+            }
+
+            // contentJson.content is now command
+            contentJson.content = command;
+
+            return contentJson;
+        }
+        else
+        {
+            return new Message() { role = "system", content = "ERROR" };; 
+        }
+    }
+}
+
+public class MyData
+{
+    public string model;
+    public Message[] messages;
+    public bool stream;
+    public float temperature;
+
+    public int max_tokens;
+    // Add other parameters as needed
+}
+
+public class Message
+{
+    public string role;
+    public string content;
+    
+}
 
 }
