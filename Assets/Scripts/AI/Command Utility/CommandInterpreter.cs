@@ -26,6 +26,22 @@ using Oculus.Interaction;
 #endif
 
 public class CommandInterpreter : MonoBehaviour {
+<<<<<<< Updated upstream
+=======
+
+// My Code
+        private const string LocalhostUri = "http://131.94.128.132:9027"; // Replace "your_port_here" with your actual port
+        private const string Model = "mistral"; // Use your desired model
+        private const string ApiKey = "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"; // Not needed for local server
+
+        private static readonly HttpClient _gptClient;
+
+        private const string myMessage = "";
+
+// My code end
+
+
+>>>>>>> Stashed changes
     // Display
     [SerializeField] private TMP_Text inputBox;
     [SerializeField] private TMP_Text outputBox;
@@ -74,7 +90,11 @@ public class CommandInterpreter : MonoBehaviour {
 
     // Loads prompt from file in Assets/Resources/prompt
     void Awake() {
+<<<<<<< Updated upstream
         openai = new OpenAIApi(apiKey: "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");
+=======
+        openai = new OpenAIApi(apiKey: "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");
+>>>>>>> Stashed changes
         // 1st LLM
         TextAsset filedata = Resources.Load<TextAsset>("OpenAI/PROMPT");
         if (filedata == null)
@@ -83,7 +103,11 @@ public class CommandInterpreter : MonoBehaviour {
         Debug.Log(prompt);
         
         // Background LLM
+<<<<<<< Updated upstream
         b_llm = new OpenAIApi(apiKey: "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");
+=======
+        b_llm = new OpenAIApi(apiKey: "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");
+>>>>>>> Stashed changes
         filedata = Resources.Load<TextAsset>("OpenAI/BACKGROUND");
         if (filedata == null)
             throw new System.Exception("No file found called prompt in 'Assets/Resources/OpenAI/BACKGROUND");
@@ -140,6 +164,11 @@ public class CommandInterpreter : MonoBehaviour {
             inputBox.text = "You wont believe it.";
         if (res.Text != "")
             CreateJSON(res.Text);
+<<<<<<< Updated upstream
+=======
+        }
+
+>>>>>>> Stashed changes
     }
 
     // Update is called once per frame
@@ -179,7 +208,7 @@ public class CommandInterpreter : MonoBehaviour {
 
         outputBox.text = "Loading response...";
 
-        // If User Input has key indicator "background" (case-insensitive), Switch to Second LLM
+        // If User Input has key indicator "background" (case-insensitive), Switch to Background (Background Prompt)
         if (change)
         {
             b_messages.Add(userRequest);
@@ -187,7 +216,15 @@ public class CommandInterpreter : MonoBehaviour {
             // Complete the instruction
             try
             {
+<<<<<<< Updated upstream
                 var compResponse = await b_llm.CreateChatCompletion(new CreateChatCompletionRequest()
+=======
+                Message allMessage = await SendMessageToChatGPTLocalAsync(b_messages);
+
+                ChatMessage completionResponse = new ChatMessage() { Role = "system", Content = allMessage.content };
+
+                if (completionResponse.Content!= null)
+>>>>>>> Stashed changes
                 {
                     Model = "gpt-4",
                     Messages = b_messages,
@@ -257,7 +294,6 @@ public class CommandInterpreter : MonoBehaviour {
                     outputBox.text = e.Message;
             }
             
-            //outputBox.text = "Background Changes Currently Not Implemented";
         }
         else
         {
@@ -265,7 +301,17 @@ public class CommandInterpreter : MonoBehaviour {
             // Complete the instruction
             try
             {
+<<<<<<< Updated upstream
                 var completionResponse = await openai.CreateChatCompletion(new CreateChatCompletionRequest()
+=======
+                Message allMessage = await SendMessageToChatGPTLocalAsync(messages);
+
+                ChatMessage completionResponse = new ChatMessage() { Role = "system", Content = allMessage.content };
+
+                Debug.Log("completionResponse: " + completionResponse.Content);
+
+                if (completionResponse.Content!= null)
+>>>>>>> Stashed changes
                 {
                     Model = "gpt-3.5-turbo-16k",
                     Messages = messages,
@@ -354,4 +400,139 @@ public class CommandInterpreter : MonoBehaviour {
         }
     }
 
+<<<<<<< Updated upstream
+=======
+    //MY code
+
+public static async Task <Message> SendMessageToChatGPTLocalAsync(List <ChatMessage> message)
+{
+    var localhostUri = "http://131.94.128.132:9027"; // Replace PORT with the actual port of your local server
+    using (var client = new HttpClient())
+    {
+        client.BaseAddress = new Uri(localhostUri);
+
+        // for(//amount in messages for each each message){
+        //     message[i].content = 
+        // }
+
+        string allMessage = "";
+
+        for(int i = 0; i < message.Count; i++){
+
+            allMessage += message[i].Content + " ";
+
+            if(i == message.Count - 1){
+                Debug.Log("Test" + message[i].Content);
+            }
+
+        }
+
+        Debug.Log("Test: " + allMessage);
+
+        var data = new MyData
+        {
+            model = "mistral",
+            messages = new[]
+            {
+                new Message
+                {
+                    role = "user",
+                    content = allMessage,
+                    
+                }
+            },
+            stream = false,
+            temperature = 0f,
+            max_tokens = 20,
+            // Add other parameters as needed
+        };
+
+        Debug.Log("Data print" + data.messages[0].content);
+
+        var json = JsonConvert.SerializeObject(data);
+        Debug.Log(json);
+
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+
+        var response = await client.PostAsync("/api/chat", content);
+        Debug.Log("Test4: " + response);
+
+        Message contentJson = new Message() { role = "system", content = "ERROR" };
+
+        if (response.IsSuccessStatusCode)
+        {
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            string[] jsonResponseStrings = responseContent.Split('\n', (char)StringSplitOptions.RemoveEmptyEntries);
+
+            foreach (string jsonResponseString in jsonResponseStrings)
+            {
+                // Check if the JSON string is not empty before parsing
+                if (!string.IsNullOrWhiteSpace(jsonResponseString))
+                {
+                    // Parse each JSON object
+                    JObject jsonResponse = JObject.Parse(jsonResponseString);
+                    
+                    contentJson.content = jsonResponse["message"]["content"].ToString();
+                }
+            }
+            
+            Debug.Log("Test3:" + contentJson.content);
+
+            // Remove extra output from the response we get
+            string command = "";
+            int consecutiveNewlines = 0;
+            for (int i = 0; i < contentJson.content.Length; i++)
+            {
+                if (consecutiveNewlines < 2)
+                {
+                    command += contentJson.content[i];
+                }
+
+                // Check for consecutive newline characters
+                if (contentJson.content[i] == '\n')
+                {
+                    consecutiveNewlines++;
+                    if (consecutiveNewlines == 2)
+                    {
+                        break; // Stop printing if two consecutive newline characters are found
+                    }
+                }
+                else
+                {
+                    consecutiveNewlines = 0; // Reset consecutive newline counter if a non-newline character is encountered
+                }
+            }
+
+            // contentJson.content is now command
+            contentJson.content = command;
+
+            return contentJson;
+        }
+        else
+        {
+            return new Message() { role = "system", content = "ERROR" };; 
+        }
+    }
+}
+
+public class MyData
+{
+    public string model;
+    public Message[] messages;
+    public bool stream;
+    public float temperature;
+
+    public int max_tokens;
+    // Add other parameters as needed
+}
+
+public class Message
+{
+    public string role;
+    public string content;
+    
+}
+
+>>>>>>> Stashed changes
 }
