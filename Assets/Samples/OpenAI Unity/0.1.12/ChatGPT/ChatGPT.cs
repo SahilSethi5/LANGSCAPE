@@ -15,9 +15,9 @@ namespace OpenAI
 
         private float height;
 <<<<<<< Updated upstream
-        private OpenAIApi openai = new OpenAIApi(apiKey: "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");
+        private OpenAIApi openai = new OpenAIApi(apiKey: "");
 =======
-        private OpenAIApi openai = new OpenAIApi(apiKey: "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");
+        private OpenAIApi openai = new OpenAIApi(apiKey: "");
 >>>>>>> Stashed changes
         
         private List<ChatMessage> messages = new List<ChatMessage>();

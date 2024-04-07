@@ -32,7 +32,7 @@ public class CommandInterpreter : MonoBehaviour {
 // My Code
         private const string LocalhostUri = "http://131.94.128.132:9027"; // Replace "your_port_here" with your actual port
         private const string Model = "mistral"; // Use your desired model
-        private const string ApiKey = "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"; // Not needed for local server
+        private const string ApiKey = ""; // Not needed for local server
 
         private static readonly HttpClient _gptClient;
 
@@ -91,9 +91,9 @@ public class CommandInterpreter : MonoBehaviour {
     // Loads prompt from file in Assets/Resources/prompt
     void Awake() {
 <<<<<<< Updated upstream
-        openai = new OpenAIApi(apiKey: "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");
+        openai = new OpenAIApi(apiKey: "");
 =======
-        openai = new OpenAIApi(apiKey: "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");
+        openai = new OpenAIApi(apiKey: "");
 >>>>>>> Stashed changes
         // 1st LLM
         TextAsset filedata = Resources.Load<TextAsset>("OpenAI/PROMPT");
@@ -104,9 +104,9 @@ public class CommandInterpreter : MonoBehaviour {
         
         // Background LLM
 <<<<<<< Updated upstream
-        b_llm = new OpenAIApi(apiKey: "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");
+        b_llm = new OpenAIApi(apiKey: "");
 =======
-        b_llm = new OpenAIApi(apiKey: "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");
+        b_llm = new OpenAIApi(apiKey: "");
 >>>>>>> Stashed changes
         filedata = Resources.Load<TextAsset>("OpenAI/BACKGROUND");
         if (filedata == null)
