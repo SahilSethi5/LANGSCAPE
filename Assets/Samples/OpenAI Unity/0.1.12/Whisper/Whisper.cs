@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -18,11 +18,7 @@ namespace OpenAI
         private AudioClip clip;
         private bool isRecording;
         private float time;
-<<<<<<< Updated upstream
-        private OpenAIApi openai = new OpenAIApi(apiKey: "");
-=======
-        private OpenAIApi openai = new OpenAIApi(apiKey: "");
->>>>>>> Stashed changes
+        private OpenAIApi openai = new OpenAIApi(apiKey: "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");
 
         private void Start()
         {
