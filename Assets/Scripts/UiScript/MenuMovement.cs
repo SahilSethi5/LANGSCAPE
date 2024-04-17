@@ -9,7 +9,7 @@ public class MenuMovement : MonoBehaviour
         
 
         // Hard code the y offset as 1
-        float yOffset = 0f;
+        float yOffset = 0.5f;
         float xOffset = 0f; 
         float zOffset = 0.5f; 
 
