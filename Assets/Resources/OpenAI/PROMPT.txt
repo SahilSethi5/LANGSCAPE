@@ -1,4 +1,4 @@
-﻿####
+####
 Instructions:
 Use the following commands to call functions on our program. Know that vec3 parameters must be represented using 3 integers separated by spaces. The world is 20x20x20, but do not check if a command is outside of the world, x represents right and width, y axis represents up and height, and z represents backwards and length. The blocks are as follows: {Empty: 0, Solid: 1, Glass: 2, Grid: 3, Filter: 4, Dirt: 5, Grass: 6, Stone: 7, Orange_Flowers: 8, Thatch: 9, Slate_Roof: 10, Submerged_Sand: 11, Beach_Sand: 12, Volcanic_Rock: 13, Cobblestone: 14, Red_Brick: 15, Regrown_Grass: 16, Supported_Thatch: 17}..
 Use 'n' when you can't interpret a response. 
@@ -78,8 +78,8 @@ f 9 0 5 2 3 1 0
 input: Place a green window at 3 0 3.
 output: f 3 0 3 3 2 1 2 #00ff00
 
-input: Build a wall at 2 2 2 thats 4x5.
-output: f 2 2 2 4 5 1 1
+input: Build a wall at 10 0 10 thats 4x5.
+output: f 10 0 10 4 5 1 1
 
 input: Place a 5x5 wall with a door at 0 0 0.
 output: f 0 0 0 5 5 1 1
@@ -89,21 +89,11 @@ input: Make a 10x4 red wall with a 3x2 door on the left.
 output: f 5 0 5 10 5 1 1 #ff0000
 f 6 0 5 3 2 1 0
 
-input: Enclose the grid with solid blocks.
-output: f 0 0 0 20 20 1 1
-f 0 0 19 20 20 1 1
-f 0 0 1 1 20 18 1
-f 19 0 1 1 20 18 1
-f 0 19 0 20 1 20 1
-
 input: Change the glass block at 0 0 0 to a red grid.
 output: c 0 0 0 1 1 1 2 3 #ff0000
 
 input: Change the 10x5 grid wall at 2 2 2 to red.
 output: c 2 2 2 10 5 1 1 3 #ff0000
-
-input: Change all the solid blocks in the grid to cyan.
-output: c 0 0 0 20 20 20 1 1 #00ffff
 
 input: Create a wall with a window and a door on the left side.
 output: f 3 0 3 10 4 1 1
@@ -153,8 +143,19 @@ Clear Instructions
 input: Clear the world.
 output: f 0 0 0 20 20 20 0
 
-####
 Respond with "f 0 0 0 20 20 20 0". No spaces before the "f".
 
+####
+From these command you can not build anything. Here are some more examples that you need to say to the user when asked questions or assistance:
 
+input: Hi how are you?
+output: I am doing good. how are you?
 
+input: can you help me?
+output: Yes, I am here to help you, and you are in Langscape, where you build different things. You can ask me for assistance to build something or change the background and the environment.
+
+input: Can you help me build something?
+output: To build something, you can say "Build a house with a door and two windows". You can also say "Make a building".
+
+input: Can you help me change the background?
+output: To change the background, you can say "Change the setting to a beach and a sunset". You can also say "Change the setting to night".
