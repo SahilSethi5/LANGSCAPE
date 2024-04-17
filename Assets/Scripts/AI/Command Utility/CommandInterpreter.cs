@@ -34,18 +34,19 @@ using Newtonsoft.Json;
 //using UnityEngine.Windows.Speech;
 #endif
 
-public class CommandInterpreter : MonoBehaviour {
+public class CommandInterpreter : MonoBehaviour
+{
 
-// My Code
-        private const string LocalhostUri = "http://131.94.128.132:9027"; // Replace "your_port_here" with your actual port
-        private const string Model = "mistral"; // Use your desired model
-        private const string ApiKey = "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"; // Not needed for local server
+    // My Code
+    private const string LocalhostUri = "http://131.94.128.132:9080"; // Replace "your_port_here" with your actual port
+    private const string Model = "mistral"; // Use your desired model
+    private const string ApiKey = ""; // Not needed for local server
 
-        private static readonly HttpClient _gptClient;
+    private static readonly HttpClient _gptClient;
 
-        private const string myMessage = "";
+    private const string myMessage = "";
 
-// My code end
+    // My code end
 
 
     // Display
@@ -87,36 +88,42 @@ public class CommandInterpreter : MonoBehaviour {
     string[] indicator2 = { " f ", " m ", " r ", " c ", " u ", " v ", " q ", " t ", "\nf ", "\nm ", "\nr ", "\nc ", "\nu ", "\nv ", "\nq ", "\nt " };
     // :: Background Building => Switch Keyword, 3 for Only Commands, 4 for Words and Commands ::
 
-    #if UNITY_STANDALONE_WIN
+#if UNITY_STANDALONE_WIN
     string LLM_keyword = "background"; //for windows version
-    #endif
-    
+#endif
+
     string[] indicator3 = { "d ", "l ", "z ", "o " };
     string[] indicator4 = { " d ", " l ", " z ", " o ", "\nd ", "\nl ", "\nz ", "\no " };
 
     // Loads prompt from file in Assets/Resources/prompt
-    void Awake() {
-        openai = new OpenAIApi(apiKey: "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");
+    void Awake()
+    {
+        openai = new OpenAIApi(apiKey: "");
         // 1st LLM
         TextAsset filedata = Resources.Load<TextAsset>("OpenAI/PROMPT");
         if (filedata == null)
             throw new System.Exception("No file found called prompt in 'Assets/Resources/OpenAI/PROMPT");
         prompt = filedata.text;
         Debug.Log(prompt);
-        
+
         // Background LLM
-        b_llm = new OpenAIApi(apiKey: "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");
+        b_llm = new OpenAIApi(apiKey: "");
         filedata = Resources.Load<TextAsset>("OpenAI/BACKGROUND");
         if (filedata == null)
             throw new System.Exception("No file found called prompt in 'Assets/Resources/OpenAI/BACKGROUND");
         b_prompt = filedata.text;
         Debug.Log(b_prompt);
-        
+
     }
 
-    private void Start() {
+    private void Start()
+    {
+        AIMic.Instance.SpeakFluff("Hi there! I'm Langscape, your AI assistant. Need help building something or changing the background? Just give me a shout!");
+        outputBox.text = "Hi there! I'm Langscape, your AI assistant. Need help building something or changing the background? Just give me a shout!";
+
         dropdown.ClearOptions();
-        foreach (var device in Microphone.devices) {
+        foreach (var device in Microphone.devices)
+        {
             dropdown.options.Add(new TMP_Dropdown.OptionData(device));
         }
         dropdown.onValueChanged.AddListener(ChangeMicrophone);
@@ -128,10 +135,12 @@ public class CommandInterpreter : MonoBehaviour {
         messages.Add(new ChatMessage() { Role = "system", Content = prompt });
         b_messages.Add(new ChatMessage() { Role = "system", Content = b_prompt });
     }
-    private void ChangeMicrophone(int index) {
+    private void ChangeMicrophone(int index)
+    {
         PlayerPrefs.SetInt("user-mic-device-index", index);
     }
-    private void StartRecording() {
+    private void StartRecording()
+    {
         isRecording = true;
         symbol.enabled = true;
         inputBox.text = "Listening...";
@@ -144,14 +153,16 @@ public class CommandInterpreter : MonoBehaviour {
         clip = Microphone.Start(dropdown.options[0].text, false, MAX_DURATION, 44100);
 #endif
     }
-    private async void EndRecording() {
+    private async void EndRecording()
+    {
         isRecording = false;
         symbol.enabled = false;
         time = 0;
         inputBox.text = "Transcribing...";
         Microphone.End(null);
         byte[] data = SaveWav.Save(fileName, clip);
-        var req = new CreateAudioTranscriptionsRequest {
+        var req = new CreateAudioTranscriptionsRequest
+        {
             FileData = new FileData() { Data = data, Name = "audio.wav" },
             Model = "whisper-1",
             Language = "en"
@@ -160,7 +171,8 @@ public class CommandInterpreter : MonoBehaviour {
         inputBox.text = res.Text;
         if (res.Error != null)
             inputBox.text = "You wont believe it.";
-        if (res.Text != ""){
+        if (res.Text != "")
+        {
             CreateJSON(res.Text);
             // SendMessageToChatGPTLocalAsync(res.Text);
         }
@@ -168,7 +180,8 @@ public class CommandInterpreter : MonoBehaviour {
     }
 
     // Update is called once per frame
-    void Update() {
+    void Update()
+    {
 #if UNITY_STANDALONE_WIN
         if (Input.GetKeyDown(KeyCode.V))
             StartRecording();
@@ -186,21 +199,24 @@ public class CommandInterpreter : MonoBehaviour {
         }
 #endif
 
-        if (isRecording) {
+        if (isRecording)
+        {
             time += Time.deltaTime;
             if (time >= MAX_DURATION)
                 EndRecording();
         }
     }
-    private async void CreateJSON(string request) {
-        ChatMessage userRequest = new ChatMessage() {
+    private async void CreateJSON(string request)
+    {
+        ChatMessage userRequest = new ChatMessage()
+        {
             Role = "user",
             Content = request
         };
 
-        #if UNITY_STANDALONE_WIN
+#if UNITY_STANDALONE_WIN
                 change = sa.SwitchLLM(userRequest.Content, LLM_keyword);
-        #endif
+#endif
 
         outputBox.text = "Loading response...";
 
@@ -213,19 +229,19 @@ public class CommandInterpreter : MonoBehaviour {
             try
             {
                 Message allMessage = await SendMessageToChatGPTLocalAsync(b_messages); //userRequest was here before
-                // {
-                //     Model = "gpt-4",
-                //     Messages = b_messages,
-                //     Temperature = 0f,
-                //     MaxTokens = 256,
-                //     PresencePenalty = 0,
-                //     FrequencyPenalty = 0
-                // });
-                
+                                                                                       // {
+                                                                                       //     Model = "gpt-4",
+                                                                                       //     Messages = b_messages,
+                                                                                       //     Temperature = 0f,
+                                                                                       //     MaxTokens = 256,
+                                                                                       //     PresencePenalty = 0,
+                                                                                       //     FrequencyPenalty = 0
+                                                                                       // });
+
 
                 ChatMessage completionResponse = new ChatMessage() { Role = "system", Content = allMessage.content };
 
-                if (completionResponse.Content!= null)
+                if (completionResponse.Content != null)
                 {
                     var aiRespa = completionResponse;
 
@@ -280,22 +296,26 @@ public class CommandInterpreter : MonoBehaviour {
                     // Implement Background Manager Instance
                     BackgroundManager.Instance.Execute(aiRespa.Content);
 
-                } else {
+                }
+                else
+                {
                     outputBox.text = "No text was generated from this prompt.";
                 }
-            } catch (System.Exception e) {
-                    outputBox.text = e.Message;
             }
-            
+            catch (System.Exception e)
+            {
+                outputBox.text = e.Message;
+            }
+
             //outputBox.text = "Background Changes Currently Not Implemented";
         }
         else
         {
-        
+
             List<ChatMessage> temp_messages = new List<ChatMessage>();
             temp_messages = messages;
             messages.Add(userRequest);
-            
+
             // Complete the instruction
             try
             {
@@ -305,7 +325,7 @@ public class CommandInterpreter : MonoBehaviour {
 
                 Debug.Log("completionResponse: " + completionResponse.Content);
 
-                if (completionResponse.Content!= null)
+                if (completionResponse.Content != null)
                 {
                     var aiResponse = completionResponse;
 
@@ -332,13 +352,13 @@ public class CommandInterpreter : MonoBehaviour {
                         // Comment out since no prompting done, do prompting and comment this back in
                         else
                         {
-                             aiResponse.Content = "n";
+                            aiResponse.Content = "n";
                         }
                     }
                     aiResponse.Content = aiResponse.Content.Trim();
 
                     //new end
-                    
+
                     //messages.Add(aiResponse);
 
                     // Checks if Sentence Declaration is Not Empty
@@ -356,7 +376,7 @@ public class CommandInterpreter : MonoBehaviour {
 
                     // Outputs Ai Response without Commands into Output Box
                     outputBox.text = fluff;
-                
+
                     // Outputs Ai Response without Sentence into Debug Log
                     Debug.Log("Command: " + aiResponse);
 
@@ -396,153 +416,155 @@ public class CommandInterpreter : MonoBehaviour {
 
     //MY code
 
-public static async Task <Message> SendMessageToChatGPTLocalAsync(List <ChatMessage> message)
-{
-    var localhostUri = "http://131.94.128.132:9027"; // Replace PORT with the actual port of your local server
-    using (var client = new HttpClient())
+    public static async Task<Message> SendMessageToChatGPTLocalAsync(List<ChatMessage> message)
     {
-        client.BaseAddress = new Uri(localhostUri);
+        var localhostUri = "http://131.94.128.132:9080"; // Replace PORT with the actual port of your local server
+        using (var client = new HttpClient())
+        {
+            client.BaseAddress = new Uri(localhostUri);
 
-        // for(//amount in messages for each each message){
-        //     message[i].content = 
-        // }
+            // for(//amount in messages for each each message){
+            //     message[i].content = 
+            // }
 
-        string allMessage = "";
+            string allMessage = "";
 
-        for(int i = 0; i < message.Count; i++){
+            for (int i = 0; i < message.Count; i++)
+            {
 
-            allMessage += message[i].Content + " ";
+                allMessage += message[i].Content + " ";
 
-            if(i == message.Count - 1){
-                Debug.Log("Test" + message[i].Content);
+                if (i == message.Count - 1)
+                {
+                    Debug.Log("Test" + message[i].Content);
+                }
+
             }
 
-        }
+            Debug.Log("Test: " + allMessage);
 
-        Debug.Log("Test: " + allMessage);
-
-        var data = new MyData
-        {
-            model = "mistral",
-            messages = new[]
+            var data = new MyData
             {
+                model = "mistral",
+                messages = new[]
+                {
                 new Message
                 {
                     role = "user",
                     content = allMessage,
-                    
+
                 }
             },
-            stream = false,
-            temperature = 0f,
-            max_tokens = 20,
-            // Add other parameters as needed
-        };
+                stream = false,
+                temperature = 0f,
+                max_tokens = 20,
+                // Add other parameters as needed
+            };
 
-        Debug.Log("Data print" + data.messages[0].content);
+            Debug.Log("Data print" + data.messages[0].content);
 
 
-        var json = JsonConvert.SerializeObject(data);
-        Debug.Log(json);
+            var json = JsonConvert.SerializeObject(data);
+            Debug.Log(json);
 
-        // var json = JsonSerializer.Serialize(new
-        // {
-        //     Model = "mistral",
-        //     Messages = new[]
-        //     {
-        //         new
-        //         {
-        //             Role = "user",
-        //             Content = message
-        //         }
-        //     },
-        //     Temperature = 0f,
-        //     MaxTokens = 256,
-        //     PresencePenalty = 0,
-        //     FrequencyPenalty = 0
-        //     // Add other parameters as needed
-        // });
+            // var json = JsonSerializer.Serialize(new
+            // {
+            //     Model = "mistral",
+            //     Messages = new[]
+            //     {
+            //         new
+            //         {
+            //             Role = "user",
+            //             Content = message
+            //         }
+            //     },
+            //     Temperature = 0f,
+            //     MaxTokens = 256,
+            //     PresencePenalty = 0,
+            //     FrequencyPenalty = 0
+            //     // Add other parameters as needed
+            // });
 
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-        var response = await client.PostAsync("/api/chat", content);
-        Debug.Log("Test4: " + response);
+            var response = await client.PostAsync("/api/chat", content);
+            Debug.Log("Test4: " + response);
 
-        Message contentJson = new Message() { role = "system", content = "ERROR" };
+            Message contentJson = new Message() { role = "system", content = "ERROR" };
 
-        if (response.IsSuccessStatusCode)
-        {
-            var responseContent = await response.Content.ReadAsStringAsync();
-
-            string[] jsonResponseStrings = responseContent.Split('\n', (char)StringSplitOptions.RemoveEmptyEntries);
-
-            foreach (string jsonResponseString in jsonResponseStrings)
+            if (response.IsSuccessStatusCode)
             {
-                // Check if the JSON string is not empty before parsing
-                if (!string.IsNullOrWhiteSpace(jsonResponseString))
-                {
-                    // Parse each JSON object
-                    JObject jsonResponse = JObject.Parse(jsonResponseString);
-                    
-                    contentJson.content = jsonResponse["message"]["content"].ToString();
-                }
-            }
-            
-            Debug.Log("Test3:" + contentJson.content);
+                var responseContent = await response.Content.ReadAsStringAsync();
 
-            // Remove extra output from the response we get
-            string command = "";
-            int consecutiveNewlines = 0;
-            for (int i = 0; i < contentJson.content.Length; i++)
-            {
-                if (consecutiveNewlines < 2)
-                {
-                    command += contentJson.content[i];
-                }
+                string[] jsonResponseStrings = responseContent.Split('\n', (char)StringSplitOptions.RemoveEmptyEntries);
 
-                // Check for consecutive newline characters
-                if (contentJson.content[i] == '\n')
+                foreach (string jsonResponseString in jsonResponseStrings)
                 {
-                    consecutiveNewlines++;
-                    if (consecutiveNewlines == 2)
+                    // Check if the JSON string is not empty before parsing
+                    if (!string.IsNullOrWhiteSpace(jsonResponseString))
                     {
-                        break; // Stop printing if two consecutive newline characters are found
+                        // Parse each JSON object
+                        JObject jsonResponse = JObject.Parse(jsonResponseString);
+
+                        contentJson.content = jsonResponse["message"]["content"].ToString();
                     }
                 }
-                else
+
+                Debug.Log("Test3:" + contentJson.content);
+
+                // Remove extra output from the response we get
+                string command = "";
+                int consecutiveNewlines = 0;
+                for (int i = 0; i < contentJson.content.Length; i++)
                 {
-                    consecutiveNewlines = 0; // Reset consecutive newline counter if a non-newline character is encountered
+                    if (consecutiveNewlines < 2)
+                    {
+                        command += contentJson.content[i];
+                    }
+
+                    // Check for consecutive newline characters
+                    if (contentJson.content[i] == '\n')
+                    {
+                        consecutiveNewlines++;
+                        if (consecutiveNewlines == 2)
+                        {
+                            break; // Stop printing if two consecutive newline characters are found
+                        }
+                    }
+                    else
+                    {
+                        consecutiveNewlines = 0; // Reset consecutive newline counter if a non-newline character is encountered
+                    }
                 }
+
+                // contentJson.content is now command
+                contentJson.content = command;
+
+                return contentJson;
             }
-
-            // contentJson.content is now command
-            contentJson.content = command;
-
-            return contentJson;
-        }
-        else
-        {
-            return new Message() { role = "system", content = "ERROR" };; 
+            else
+            {
+                return new Message() { role = "system", content = "ERROR" }; ;
+            }
         }
     }
-}
 
-public class MyData
-{
-    public string model;
-    public Message[] messages;
-    public bool stream;
-    public float temperature;
+    public class MyData
+    {
+        public string model;
+        public Message[] messages;
+        public bool stream;
+        public float temperature;
 
-    public int max_tokens;
-    // Add other parameters as needed
-}
+        public int max_tokens;
+        // Add other parameters as needed
+    }
 
-public class Message
-{
-    public string role;
-    public string content;
-    
-}
+    public class Message
+    {
+        public string role;
+        public string content;
+
+    }
 
 }
